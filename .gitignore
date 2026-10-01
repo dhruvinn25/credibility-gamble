@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables / secrets
+.env
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated outputs
+figures/*.png
+figures/*.jpg
+figures/*.pdf
+
+# Large/raw datasets
+data/raw/*
+!data/raw/.gitkeep
