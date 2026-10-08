@@ -9,7 +9,7 @@ Data Visualization class project, Part A. This file records what was done in eac
 | 1 | Dataset, motivation, complexity | dhruvinn25 | Done | notebook section 1 |
 | 2 | Load dataset | dhruvinn25 | Done | notebook section 2 |
 | 3 | Pre-cleaning insights and visuals | dhruvinn25 | Done | notebook section 3 |
-| 4 | Data cleaning | dhruvinn25 | Not started | notebook section 4 |
+| 4 | Data cleaning | dhruvinn25 | Done | notebook section 4 |
 | 5 | Pre vs post cleaning visuals | dhruvinn25 | Not started | notebook section 5 |
 | 6 | ML direction | Teammate | Not started | |
 | 7 | Feature selection, feature-to-target, correlation heatmap | Teammate | Not started | |
@@ -32,7 +32,9 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 | `notebooks/01_data_prep.ipynb` | Steps 1 to 5, executed, with outputs | Yes |
 | `DOCUMENTATION.md` | This file | Yes |
 | `outputs/figures/` | Charts saved by the notebook, for slides and the report | Yes |
+| `outputs/column_tags.csv` | Every cleaned column with its role, group and type | Yes |
 | `data/raw/` | The Kaggle file | No |
+| `data/processed/loans_clean.parquet` | The cleaned table, written by notebook section 4 (275 MB) | No: re-create it by running the notebook |
 
 ---
 
@@ -100,7 +102,7 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 | Measure | Value |
 |---|---|
 | File on disk | 393 MB (gzip) |
-| pandas load time, CPU | 64 to 80 s across runs |
+| pandas load time, CPU | 64 to 84 s across runs |
 | Shape | 2,260,701 rows x 151 columns |
 | In memory | 3.29 GB |
 | Column types | 113 numeric (`float64`), 38 text |
@@ -120,7 +122,7 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 
 **Open**
 
-- **GPU timing not done.** The plan was one Colab run timing the same load with cuDF, for a CPU-versus-GPU comparison. Colab needs a Google login, so this is still to do. The CPU number to compare against is 64 to 80 s (it varies from run to run on the same laptop).
+- **GPU timing not done.** The plan was one Colab run timing the same load with cuDF, for a CPU-versus-GPU comparison. Colab needs a Google login, so this is still to do. The CPU number to compare against is 64 to 84 s (it varies from run to run on the same laptop).
 
 **Commit:** `Steps 1-2: dataset introduction, load and first profile`
 
@@ -139,7 +141,7 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 | 3.1 | Volume over time | 603 loans in 2007, 495,242 in 2018 | Do not delete early rows for lacking later fields |
 | 3.2 | Missing values by column | 31.8% of all cells are empty. 58 of 151 columns are more than 30% empty; the other 93 are at most 13.1% empty. Nothing lies between 13% and 38% | Drop columns above 30% |
 | 3.3 | Missing values by issue year | Gaps follow the calendar: `tot_cur_bal` and its block start in 2012, `open_acc_6m` and its block of 13 in December 2015, joint fields in late 2015, second-applicant fields in 2017 | Drop the late blocks; they cannot be filled for earlier loans |
-| 3.4 | Extreme values | `annual_inc` up to 110,000,000, `dti` up to 999, `revol_util` up to 892% | Cap four columns at the 99.9th percentile |
+| 3.4 | Extreme values | `annual_inc` up to 110,000,000, `dti` up to 999, `revol_util` up to 892% | Cap income, utilisation and revolving balance at the 99.9th percentile; DTI is fixed by the next row |
 | 3.4 | Where the broken values come from | All 1,667 zero incomes, all 2,561 DTIs above 100 and all 1,711 missing DTIs are joint applications | Use the joint income and DTI for joint applications |
 | 3.5 | Target | 69.9% of loans are an exact multiple of \$1,000, 34.2% of \$5,000; \$10,000 alone is 8.3% of loans. Maximum \$25,000, then \$35,000 from Feb 2011, then \$40,000 from Mar 2016 | None: the target is complete and valid. Keep issue year as a feature |
 | 3.6 | Text columns | `term` is `" 36 months"`, `emp_length` is `"10+ years"`, dates are `"Dec-2015"`, `emp_title` has 512,694 distinct values, `home_ownership` has three rare labels (1,232 loans) | Parse to numbers and dates; tidy the labels |
@@ -159,3 +161,76 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 - The 2015 to 2018 loans are 79% of the file, so overall averages mostly describe those years.
 
 **Commit:** `Step 3: pre-cleaning insights`
+
+### Step 4: data cleaning
+
+**What was done**
+
+Nine actions, each one traced to an observation in step 3. Rows and columns are logged after every action.
+
+| # | Action | Rows | Columns | Detail |
+|---|---|---|---|---|
+| 0 | Raw file | 2,260,701 | 151 | |
+| 1 | Drop summary rows | 2,260,668 | 151 | 33 rows removed; no duplicate ids; `id` converted from text to integer |
+| 2 | Joint income and DTI for joint loans | 2,260,668 | 151 | 120,710 joint applications now carry the joint figures |
+| 3 | Drop empty and constant columns | 2,260,668 | 146 | `member_id`, `policy_code`, `hardship_type`, `deferral_term`, `hardship_length` |
+| 4 | Drop columns over 30% missing | 2,260,668 | 92 | 54 columns |
+| 5 | Drop redundant columns | 2,260,668 | 89 | `url`, `title`, `fico_range_high` |
+| 6 | Parse text; derive 2 columns | 2,260,668 | 90 | `issue_year` and `credit_history_years` added, `earliest_cr_line` removed |
+| 7 | Fill missing values | 2,260,668 | 90 | 2,998,961 cells in 54 columns |
+| 8 | Cap 3 columns at the 99.9th percentile | 2,260,668 | 90 | 6,771 values capped |
+| 9 | Tag columns; store labels as categories | 2,260,668 | 90 | roles written to `outputs/column_tags.csv` |
+
+The cleaned table is written to `data/processed/loans_clean.parquet`.
+
+**Detail and reasons, action by action**
+
+- **1. Summary rows.** They are totals lines, not loans.
+- **2. Joint applications.** LendingClub assessed joint applications on the two borrowers together. The individual fields are then sometimes 0, 999 or empty. Replacing them with the joint value fixed all 1,667 zero incomes, all 2,561 DTIs above 100 and all 1,711 missing DTIs. One negative DTI on an individual application was set to missing and then filled with the median in action 7. After this step `annual_inc` and `dti` mean "the figure the application was assessed on".
+- **3 and 4. Columns dropped.** The 54 dropped for missing values are: 19 from the credit bureau file (the 2015-onward block and the mostly-empty "months since" columns), all 16 joint and second-applicant columns, 11 hardship and 6 settlement detail columns, `desc`, and `next_pymnt_d`. The most-missing column that is kept is `mths_since_recent_inq` at 13.1%.
+- **5. Redundant columns.** `url` is the id inside a web address, `title` repeats `purpose` as free text, `fico_range_high` is `fico_range_low` plus 4 or 5.
+- **6. Parsing.**
+  - `term`: `" 36 months"` to 36.
+  - `emp_length`: `"< 1 year"` to 0, up to `"10+ years"` to 10. So 10 means ten or more.
+  - `issue_d`, `last_pymnt_d`, `last_credit_pull_d`: text to dates.
+  - `issue_year`: new, from `issue_d`.
+  - `credit_history_years`: new, the time from `earliest_cr_line` to `issue_d`. Range 0.5 to 83.3 years, median 14.8.
+  - `emp_title`: trimmed and lower-cased, 512,694 distinct values down to 411,810.
+  - `home_ownership`: `ANY` and `NONE` merged into `OTHER` (1,232 loans).
+- **7. Missing values.** Numbers get the column median (not the mean, because the columns are skewed). Text gets the label `unknown`. Dates are left empty. The largest fills: `mths_since_recent_inq` 13.1% of loans, `emp_title` 7.4%, `num_tl_120dpd_2m` 6.8%, `emp_length` 6.5% (median 6 years), `mo_sin_old_il_acct` 6.2%, then about 30 credit-bureau columns at 2 to 3%.
+- **8. Capping.**
+
+  | Column | Max before | Cap | Loans capped |
+  |---|---|---|---|
+  | `annual_inc` | 110,000,000 | 611,024 | 2,261 |
+  | `revol_util` | 892.3 | 102.1 | 2,249 |
+  | `revol_bal` | 2,904,836 | 265,894 | 2,261 |
+
+  `dti` is **not** capped. After action 2 it runs from 0 to 69.5, and those top values are real joint DTIs. A first version of the notebook did cap it at the 99.9th percentile (40.7); that was removed because it cut into genuine values.
+- **9. Roles.**
+
+  | Role | Columns | Meaning |
+  |---|---|---|
+  | `application` | 61 | Known when the borrower applies. Feature set A |
+  | `post_issue` | 18 | Only exists after the loan is issued. Never a feature |
+  | `lc_pricing` | 6 | `term`, `int_rate`, `grade`, `sub_grade`, `initial_list_status`, `disbursement_method`. Set by LendingClub knowing the amount. Feature set B only |
+  | `leakage` | 3 | `funded_amnt`, `funded_amnt_inv`, `installment`. Never a feature |
+  | `id` | 1 | |
+  | `target` | 1 | `loan_amnt` |
+
+**Checks built into the notebook**
+
+- Every raw column is in exactly one group and every cleaned column has exactly one role. The notebook stops if not.
+- `emp_length` parsing stops if it meets a label that is not in the mapping.
+- The row count after cleaning equals the raw count minus the 33 summary rows.
+- The only columns with empty cells after cleaning are `last_pymnt_d` (2,427) and `last_credit_pull_d` (72), left empty on purpose.
+
+**Limits of this cleaning (open for step 7)**
+
+- **Medians are placeholders for early loans.** About 3% of loans (issued before mid-2012) have a median in every credit-bureau column that was not recorded yet.
+- **`mths_since_recent_inq`:** an empty value means no recent inquiry, so the median (5 months) understates how clean those borrowers are.
+- **`emp_length`:** the 6.5% with no value probably gave no employer. They get the median, which hides that. `emp_title == "unknown"` still marks most of them.
+- **Roles are assigned from column names and what the columns hold.** They were not checked field by field against LendingClub's data dictionary; worth a look before modelling.
+- **Only three columns are capped.** Other skewed columns (for example `tot_cur_bal`, `tot_coll_amt`) are as recorded.
+
+**Commit:** `Step 4: cleaning pipeline`

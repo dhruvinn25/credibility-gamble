@@ -1,0 +1,91 @@
+column,role,group,dtype
+id,id,Loan terms and listing,int64
+loan_amnt,target,Loan terms and listing,float64
+funded_amnt,leakage,Loan terms and listing,float64
+funded_amnt_inv,leakage,Loan terms and listing,float64
+term,lc_pricing,Loan terms and listing,int16
+int_rate,lc_pricing,Loan terms and listing,float64
+installment,leakage,Loan terms and listing,float64
+grade,lc_pricing,Loan terms and listing,category
+sub_grade,lc_pricing,Loan terms and listing,category
+emp_title,application,Borrower profile,str
+emp_length,application,Borrower profile,float64
+home_ownership,application,Borrower profile,category
+annual_inc,application,Borrower profile,float64
+verification_status,application,Borrower profile,category
+issue_d,application,Loan terms and listing,datetime64[us]
+loan_status,post_issue,Post-issue performance,category
+pymnt_plan,post_issue,Post-issue performance,category
+purpose,application,Loan terms and listing,category
+zip_code,application,Borrower profile,str
+addr_state,application,Borrower profile,category
+dti,application,Borrower profile,float64
+delinq_2yrs,application,Credit bureau file,float64
+fico_range_low,application,Credit bureau file,float64
+inq_last_6mths,application,Credit bureau file,float64
+open_acc,application,Credit bureau file,float64
+pub_rec,application,Credit bureau file,float64
+revol_bal,application,Credit bureau file,float64
+revol_util,application,Credit bureau file,float64
+total_acc,application,Credit bureau file,float64
+initial_list_status,lc_pricing,Loan terms and listing,category
+out_prncp,post_issue,Post-issue performance,float64
+out_prncp_inv,post_issue,Post-issue performance,float64
+total_pymnt,post_issue,Post-issue performance,float64
+total_pymnt_inv,post_issue,Post-issue performance,float64
+total_rec_prncp,post_issue,Post-issue performance,float64
+total_rec_int,post_issue,Post-issue performance,float64
+total_rec_late_fee,post_issue,Post-issue performance,float64
+recoveries,post_issue,Post-issue performance,float64
+collection_recovery_fee,post_issue,Post-issue performance,float64
+last_pymnt_d,post_issue,Post-issue performance,datetime64[us]
+last_pymnt_amnt,post_issue,Post-issue performance,float64
+last_credit_pull_d,post_issue,Post-issue performance,datetime64[us]
+last_fico_range_high,post_issue,Post-issue performance,float64
+last_fico_range_low,post_issue,Post-issue performance,float64
+collections_12_mths_ex_med,application,Credit bureau file,float64
+application_type,application,Loan terms and listing,category
+acc_now_delinq,application,Credit bureau file,float64
+tot_coll_amt,application,Credit bureau file,float64
+tot_cur_bal,application,Credit bureau file,float64
+total_rev_hi_lim,application,Credit bureau file,float64
+acc_open_past_24mths,application,Credit bureau file,float64
+avg_cur_bal,application,Credit bureau file,float64
+bc_open_to_buy,application,Credit bureau file,float64
+bc_util,application,Credit bureau file,float64
+chargeoff_within_12_mths,application,Credit bureau file,float64
+delinq_amnt,application,Credit bureau file,float64
+mo_sin_old_il_acct,application,Credit bureau file,float64
+mo_sin_old_rev_tl_op,application,Credit bureau file,float64
+mo_sin_rcnt_rev_tl_op,application,Credit bureau file,float64
+mo_sin_rcnt_tl,application,Credit bureau file,float64
+mort_acc,application,Credit bureau file,float64
+mths_since_recent_bc,application,Credit bureau file,float64
+mths_since_recent_inq,application,Credit bureau file,float64
+num_accts_ever_120_pd,application,Credit bureau file,float64
+num_actv_bc_tl,application,Credit bureau file,float64
+num_actv_rev_tl,application,Credit bureau file,float64
+num_bc_sats,application,Credit bureau file,float64
+num_bc_tl,application,Credit bureau file,float64
+num_il_tl,application,Credit bureau file,float64
+num_op_rev_tl,application,Credit bureau file,float64
+num_rev_accts,application,Credit bureau file,float64
+num_rev_tl_bal_gt_0,application,Credit bureau file,float64
+num_sats,application,Credit bureau file,float64
+num_tl_120dpd_2m,application,Credit bureau file,float64
+num_tl_30dpd,application,Credit bureau file,float64
+num_tl_90g_dpd_24m,application,Credit bureau file,float64
+num_tl_op_past_12m,application,Credit bureau file,float64
+pct_tl_nvr_dlq,application,Credit bureau file,float64
+percent_bc_gt_75,application,Credit bureau file,float64
+pub_rec_bankruptcies,application,Credit bureau file,float64
+tax_liens,application,Credit bureau file,float64
+tot_hi_cred_lim,application,Credit bureau file,float64
+total_bal_ex_mort,application,Credit bureau file,float64
+total_bc_limit,application,Credit bureau file,float64
+total_il_high_credit_limit,application,Credit bureau file,float64
+hardship_flag,post_issue,Hardship plan,category
+disbursement_method,lc_pricing,Loan terms and listing,category
+debt_settlement_flag,post_issue,Debt settlement,category
+issue_year,application,Loan terms and listing,int16
+credit_history_years,application,Credit bureau file,float64
