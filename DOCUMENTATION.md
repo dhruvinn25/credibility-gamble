@@ -8,7 +8,7 @@ Data Visualization class project, Part A. This file records what was done in eac
 |---|---|---|---|---|
 | 1 | Dataset, motivation, complexity | dhruvinn25 | Done | notebook section 1 |
 | 2 | Load dataset | dhruvinn25 | Done | notebook section 2 |
-| 3 | Pre-cleaning insights and visuals | dhruvinn25 | Not started | notebook section 3 |
+| 3 | Pre-cleaning insights and visuals | dhruvinn25 | Done | notebook section 3 |
 | 4 | Data cleaning | dhruvinn25 | Not started | notebook section 4 |
 | 5 | Pre vs post cleaning visuals | dhruvinn25 | Not started | notebook section 5 |
 | 6 | ML direction | Teammate | Not started | |
@@ -100,7 +100,7 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 | Measure | Value |
 |---|---|
 | File on disk | 393 MB (gzip) |
-| pandas load time, CPU | 64 s |
+| pandas load time, CPU | 64 to 80 s across runs |
 | Shape | 2,260,701 rows x 151 columns |
 | In memory | 3.29 GB |
 | Column types | 113 numeric (`float64`), 38 text |
@@ -120,6 +120,42 @@ Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python
 
 **Open**
 
-- **GPU timing not done.** The plan was one Colab run timing the same load with cuDF, for a CPU-versus-GPU comparison. Colab needs a Google login, so this is still to do. The CPU number to compare against is 64 s.
+- **GPU timing not done.** The plan was one Colab run timing the same load with cuDF, for a CPU-versus-GPU comparison. Colab needs a Google login, so this is still to do. The CPU number to compare against is 64 to 80 s (it varies from run to run on the same laptop).
 
 **Commit:** `Steps 1-2: dataset introduction, load and first profile`
+
+### Step 3: pre-cleaning insights and visuals
+
+**What was done**
+
+- Looked at the raw data from seven angles, changing nothing. Each one ends with the cleaning action it leads to.
+- Saved six charts to `outputs/figures/` (names start with `03_`).
+- Built the complexity scorecard (notebook 3.8) from the measured values, which completes section 1.8.
+
+**What we found, and what it means for cleaning**
+
+| # | Looked at | Finding | Cleaning action |
+|---|---|---|---|
+| 3.1 | Volume over time | 603 loans in 2007, 495,242 in 2018 | Do not delete early rows for lacking later fields |
+| 3.2 | Missing values by column | 31.8% of all cells are empty. 58 of 151 columns are more than 30% empty; the other 93 are at most 13.1% empty. Nothing lies between 13% and 38% | Drop columns above 30% |
+| 3.3 | Missing values by issue year | Gaps follow the calendar: `tot_cur_bal` and its block start in 2012, `open_acc_6m` and its block of 13 in December 2015, joint fields in late 2015, second-applicant fields in 2017 | Drop the late blocks; they cannot be filled for earlier loans |
+| 3.4 | Extreme values | `annual_inc` up to 110,000,000, `dti` up to 999, `revol_util` up to 892% | Cap four columns at the 99.9th percentile |
+| 3.4 | Where the broken values come from | All 1,667 zero incomes, all 2,561 DTIs above 100 and all 1,711 missing DTIs are joint applications | Use the joint income and DTI for joint applications |
+| 3.5 | Target | 69.9% of loans are an exact multiple of \$1,000, 34.2% of \$5,000; \$10,000 alone is 8.3% of loans. Maximum \$25,000, then \$35,000 from Feb 2011, then \$40,000 from Mar 2016 | None: the target is complete and valid. Keep issue year as a feature |
+| 3.6 | Text columns | `term` is `" 36 months"`, `emp_length` is `"10+ years"`, dates are `"Dec-2015"`, `emp_title` has 512,694 distinct values, `home_ownership` has three rare labels (1,232 loans) | Parse to numbers and dates; tidy the labels |
+| 3.7 | Empty, constant, redundant | `member_id` is empty; `policy_code`, `hardship_type`, `deferral_term`, `hardship_length` hold one value; `fico_range_high` is always `fico_range_low` + 4 or 5 | Drop them |
+| 3.7 | Leakage | `funded_amnt` equals `loan_amnt` in 99.91% of loans; correlations with the target: `funded_amnt` 1.000, `funded_amnt_inv` 0.999, `installment` 0.946. For comparison `annual_inc` 0.197, `fico_range_low` 0.111, `int_rate` 0.098 | Tag, do not drop |
+
+**Why these choices**
+
+- **30% threshold:** the columns fall into two separate sets (at most 13% empty, or at least 38% empty), so any threshold between those gives the same result. The choice is not sensitive.
+- **Drop, not fill, the mostly-empty columns:** filling a third or more of a column means inventing data. The blocks added in 2015 are 100% empty for the 38% of loans issued before then.
+- **"Months since" columns:** an empty value means the event never happened (for example never delinquent). No number can stand for "never", and the count columns (`delinq_2yrs`, `pub_rec`) carry the same information.
+- **Cap, not delete, extremes:** each row is a real loan with a valid target.
+
+**Things the teammate should know for steps 6-9**
+
+- The target is heaped on round numbers and bounded by a cap that moved twice. Both are properties of the problem, not errors.
+- The 2015 to 2018 loans are 79% of the file, so overall averages mostly describe those years.
+
+**Commit:** `Step 3: pre-cleaning insights`
