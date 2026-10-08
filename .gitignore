@@ -24,3 +24,6 @@ figures/*.pdf
 # Large/raw datasets
 data/raw/*
 !data/raw/.gitkeep
+
+# Cleaned data (re-create by running notebooks/01_data_prep.ipynb)
+data/processed/
