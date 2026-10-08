@@ -10,7 +10,7 @@ Data Visualization class project, Part A. This file records what was done in eac
 | 2 | Load dataset | dhruvinn25 | Done | notebook section 2 |
 | 3 | Pre-cleaning insights and visuals | dhruvinn25 | Done | notebook section 3 |
 | 4 | Data cleaning | dhruvinn25 | Done | notebook section 4 |
-| 5 | Pre vs post cleaning visuals | dhruvinn25 | Not started | notebook section 5 |
+| 5 | Pre vs post cleaning visuals | dhruvinn25 | Done | notebook section 5 |
 | 6 | ML direction | Teammate | Not started | |
 | 7 | Feature selection, feature-to-target, correlation heatmap | Teammate | Not started | |
 | 8 | Decision table | Teammate | Not started | |
@@ -23,7 +23,44 @@ Data Visualization class project, Part A. This file records what was done in eac
 3. `pip install -r requirements.txt` (pandas, pyarrow, numpy, matplotlib, seaborn, jupyter).
 4. Open `notebooks/01_data_prep.ipynb` and run all cells from top to bottom.
 
-Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python 3.14, pandas 3.0.3, pyarrow 23.0.1, matplotlib 3.11.0, seaborn 0.13.2.
+The whole notebook takes about three minutes on a 16 GB laptop (the load alone is 64 to 84 s). It finishes with `data/processed/loans_clean.parquet` (2,260,668 rows x 90 columns, 275 MB) on disk.
+
+Environment the notebook was last run in: Windows 11, 16 GB RAM, Anaconda Python 3.14, pandas 3.0.3, pyarrow 23.0.1, matplotlib 3.11.0, seaborn 0.13.2. It has not been run on other versions.
+
+## Hand-off notes for steps 6-9
+
+**Start from** `data/processed/loans_clean.parquet` (`pd.read_parquet`) and `outputs/column_tags.csv`.
+
+| | Raw file | Cleaned file |
+|---|---|---|
+| Rows | 2,260,701 | 2,260,668 (one per loan) |
+| Columns | 151 | 90 |
+| Column types | 113 numeric, 38 text | 72 numeric, 13 category, 3 date, 2 free text |
+| Cells missing | 31.8% | 0.001% (two post-issue date columns) |
+| In memory | 3.29 GB | 1.44 GB |
+
+**Pick features with the `role` column of `column_tags.csv`:**
+
+- `application` (61 columns): known when the borrower applies. Feature set A.
+- `lc_pricing` (6): set by LendingClub knowing the amount. Feature set B only, and partly circular.
+- `leakage` (3) and `post_issue` (18): never model features.
+- `target`: `loan_amnt`. `id`: the loan id.
+
+**Know these before using the table:**
+
+- `annual_inc` and `dti` hold the **joint** figures for joint applications and the individual figures otherwise. `application_type` says which.
+- Loans issued before mid-2012 (about 3% of rows) have a **median placeholder** in every credit-bureau column that did not exist yet. `issue_year` identifies them.
+- `emp_length` is in years and **10 means ten or more**. The 6.5% with no value got the median (6).
+- `annual_inc`, `revol_util` and `revol_bal` are **capped** at their 99.9th percentile. `dti` is not capped.
+- `emp_title` still has 411,810 distinct values and needs grouping before use. `zip_code` is a three-digit prefix stored as text.
+- The **target is untouched**: identical to the raw file loan by loan. It is heaped on round numbers and bounded by a cap that moved in February 2011 and March 2016.
+- `last_pymnt_d` and `last_credit_pull_d` have a few empty cells on purpose.
+
+**Still open**
+
+- GPU timing of the load on Colab (see step 2).
+- How the parquet file reaches teammates: re-run the notebook, or share the 275 MB file on a drive.
+- Roles were assigned from column names; check them against LendingClub's data dictionary before modelling.
 
 ## Files
 
@@ -234,3 +271,63 @@ The cleaned table is written to `data/processed/loans_clean.parquet`.
 - **Only three columns are capped.** Other skewed columns (for example `tot_cur_bal`, `tot_coll_amt`) are as recorded.
 
 **Commit:** `Step 4: cleaning pipeline`
+
+### Step 5: before and after cleaning
+
+**What was done**
+
+- Reloaded the saved parquet file and drew every "after" from it, not from the table in memory, so the charts show what a teammate will load.
+- Compared the table before and after on size, types, missing values and extreme values, and drew the cleaning funnel.
+- Saved three charts to `outputs/figures/` (names start with `05_`).
+- Checked that the target did not change.
+
+**What we found**
+
+| Measure | Before | After |
+|---|---|---|
+| Rows | 2,260,701 | 2,260,668 |
+| Columns | 151 | 90 |
+| Numeric columns | 113 | 72 |
+| Date columns | 0 | 3 |
+| Category columns | 0 | 13 |
+| Free-text columns | 38 | 2 |
+| Columns with missing values | 113 | 2 |
+| Cells missing | 31.8% | 0.001% |
+| In memory | 3.29 GB | 1.44 GB |
+| File on disk | 393 MB (csv.gz) | 275 MB (parquet) |
+
+- **Missing values** (`05_missing_before_after.png`): complete columns go from 38 to 88. Before, 58 columns were more than 30% empty; after, none is.
+
+  | Share missing | Columns before | Columns after |
+  |---|---|---|
+  | none | 38 | 88 |
+  | up to 15% | 55 | 2 |
+  | 15% to 50% | 14 | 0 |
+  | 50% to 90% | 6 | 0 |
+  | over 90% | 38 | 0 |
+
+- **Extreme values** (`05_outliers_before_after.png`): before, each box plot is squashed flat by a few extreme points. After, the box, median and whiskers are readable.
+
+  | Column | Max before | Max after | Median before | Median after |
+  |---|---|---|---|---|
+  | `annual_inc` | 110,000,000 | 611,024 | 65,000 | 68,500 |
+  | `dti` | 999 | 69.5 | 17.8 | 17.7 |
+  | `revol_util` | 892.3 | 102.1 | 50.3 | 50.3 |
+  | `revol_bal` | 2,904,836 | 265,894 | 11,324 | 11,324 |
+
+  The medians barely move: the cleaning changed the extremes and left the bulk of the data alone. The `annual_inc` median rises because joint applications now carry the combined income of both borrowers.
+- **Cleaning funnel** (`05_cleaning_funnel.png`): columns go 151, 146, 92, 89, 90. The big drop is the mostly-empty columns. Rows change once, by 33.
+- **Target:** `loan_amnt` is identical before and after, loan by loan.
+
+**Verification**
+
+- The notebook was run from top to bottom in one pass with no errors or warnings, and it is committed with those outputs.
+- A separate check in a fresh Python process, reading the saved parquet file and comparing it with the raw data, confirmed:
+  - 2,260,668 rows and 90 columns, unique ids, the same loans in the same order as the raw file;
+  - the target identical to the raw file;
+  - empty cells only in the two post-issue date columns;
+  - `term`, `issue_d` and `issue_year` agree with the raw text;
+  - `annual_inc` and `dti` equal the joint-or-individual value, median-filled, with income capped and DTI not;
+  - `column_tags.csv` lists exactly the cleaned columns, each with a role.
+
+**Commit:** `Step 5: before/after cleaning visuals`
